@@ -1,0 +1,269 @@
+
+//main
+package tuglaKirici;
+
+import javax.swing.JFrame;
+
+public class main {
+
+	public static void main(String[] args) {
+		JFrame obj =new JFrame();
+		Oynanis oyunOyna = new Oynanis();
+		obj.setBounds(10, 10, 700, 600);
+		obj.setTitle("Tuğla Patlat !!!");
+		obj.setResizable(false);
+		obj.setVisible(true); 
+		obj.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		obj.add(oyunOyna);
+
+	}
+
+}
+// Gameplay
+
+
+package brickBracker;
+
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import javax.swing.Timer;
+
+import javax.swing.JPanel;
+
+public class Gameplay extends JPanel implements KeyListener, ActionListener {
+	private boolean oyun = false;
+	private int puan = 0;
+	
+	private int toplamtugla = 21;
+	
+	private Timer kronometre;
+	private int gecikme = 5;
+	
+	private int oyuncuA = 310;
+	
+	private int toppozisyonuX = 120;
+	private int toppozisyonuY = 350;
+	private int topyonuX = -1;
+	private int topyonuY = -2;
+	
+	private MapGenerator harita;
+	
+	public Gameplay() {
+		harita = new MapGenerator(3,7);
+		addKeyListener(this);
+		setFocusable(true);
+		setFocusTraversalKeysEnabled(false);
+		kronometre = new Timer(gecikme, this);
+		kronometre.start();
+	}
+	
+	public void paint(Graphics g) {
+		//arka fon
+
+		g.setColor(Color.orange);
+		g.fillRect(1, 1, 692, 592);
+		
+		//çizim haritası
+
+		harita.draw((Graphics2D)g);
+		
+		//sınırlar
+		g.setColor(Color.yellow);
+		g.fillRect(0, 0, 3, 592);
+		g.fillRect(0, 0, 692, 3);
+		g.fillRect(691, 0, 3, 592);
+		
+		//puanlar
+		g.setColor(Color.black);
+		g.setFont(new Font("serif", Font.BOLD, 25));
+		g.drawString("" + puan, 590, 30);
+		
+		//kürek
+		g.setColor(Color.gray);
+		g.fillRect(oyuncuA, 550, 100, 8);
+		
+		//top
+		g.setColor(Color.blue);
+		g.fillOval(toppozisyonuX, toppozisyonuY, 20, 20);
+		
+		if(toplamtugla <= 0) {
+			oyun = false;
+			topyonuX = 0;
+			topyonuY = 0;
+			g.setColor(Color.blue);
+			g.setFont(new Font("serif", Font.BOLD, 30));
+			g.drawString("Kazandın", 260, 300);
+			
+			g.setFont(new Font("serif", Font.BOLD, 20));
+			g.drawString(" ", 230, 350);//yeniden oynamak için entere basın
+		}
+		
+		if(toppozisyonuY > 570) {
+			oyun = false;
+			topyonuX = 0;
+			topyonuY = 0;
+			g.setColor(Color.blue);
+			g.setFont(new Font("serif", Font.BOLD, 30));
+			g.drawString("Oyun Bitti", 190, 300);
+			
+			g.setFont(new Font("serif", Font.BOLD, 20));
+			g.drawString(" ", 190, 350);//Yeniden Oynamak İçin Enter'a basın
+			
+		}
+		
+		g.dispose();
+	}
+	
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		kronometre.start();
+		if(oyun) {
+			if(new Rectangle(toppozisyonuX, toppozisyonuY, 20, 20).intersects(new Rectangle(oyuncuA, 550, 100, 8))) {
+				topyonuY = -topyonuY;
+			}
+			
+			A : for(int i = 0; i <harita.harita.length; i++) {
+				for(int j = 0; j < harita.harita[0].length; j++) {
+					if(harita.harita[i][j] > 0) {
+						int tuglaX = j * harita.tuglagenisligi + 80;
+						int tuglaY = i* harita.tuglayuksekligi + 50;
+						int tuglagenisligi = harita.tuglagenisligi;
+						int tuglayuksekligi = harita.tuglayuksekligi;
+						
+						Rectangle rect = new Rectangle(tuglaX, tuglaY, tuglagenisligi, tuglayuksekligi);
+						Rectangle ballRect = new Rectangle(toppozisyonuX, toppozisyonuY, 20, 20);
+						Rectangle brickRect = rect;
+						
+						if(ballRect.intersects(brickRect)) {
+							harita.tuglaDegeriniAyarla(0, i, j);
+							toplamtugla--;
+							puan += 7;
+							
+							if(toppozisyonuX + 10 <= brickRect.x || toppozisyonuX + 1 >= brickRect.x + brickRect.width) {
+								topyonuX = -topyonuX;
+							}else {
+								topyonuY = -topyonuY;
+							}
+							break A;
+						}
+						
+					}
+				}
+			}
+			
+			toppozisyonuX += topyonuX;
+			toppozisyonuY += topyonuY;
+			if(toppozisyonuX < 0) {
+				topyonuX = -topyonuX;
+			}
+			if(toppozisyonuY < 0) {
+				topyonuY = -topyonuY;
+			}
+			if(toppozisyonuX > 670) {
+				topyonuX = -topyonuX;
+			}
+		}
+		repaint();
+		
+	}
+	
+	@Override
+	public void keyTyped(KeyEvent e) {}
+	@Override
+	public void keyReleased(KeyEvent e) {}
+	
+	@Override
+	public void keyPressed(KeyEvent e) {
+		if(e.getKeyCode() == KeyEvent.VK_RIGHT) {
+			if(oyuncuA >= 600) {
+				oyuncuA = 600;
+			}else {
+				sagaHareket();
+			}
+		}
+		if(e.getKeyCode() == KeyEvent.VK_LEFT) {
+			if(oyuncuA < 10) {
+				oyuncuA = 10;
+			}else {
+				solaHareket();
+			}
+		}
+		if(e.getKeyCode() == KeyEvent.VK_ENTER) {
+			if(oyun) {
+				oyun = true;
+				toppozisyonuX = 120;
+				toppozisyonuY = 350;
+				topyonuX = -1;
+				topyonuY = -2;
+				oyuncuA = 310;
+				puan = 0;
+				toplamtugla = 21;
+				harita = new MapGenerator(3,7);
+				
+				repaint();
+			}
+		}
+		
+	}
+	public void sagaHareket() {
+		oyun = true;
+		oyuncuA+=40;
+		 
+	}
+	public void solaHareket() {
+		oyun = true;
+		oyuncuA-=40;
+		 
+	}
+}
+//MapGenerator
+
+
+package brickBracker;
+
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics2D;
+
+public class MapGenerator {
+	public int harita[][];
+	public int tuglagenisligi;
+	public int tuglayuksekligi;
+	public MapGenerator(int satir, int sutun) {
+		harita = new int[satir][sutun];
+		for(int i = 0; i < harita.length; i++) {
+			for(int j = 0; j< harita[0].length; j++) {
+				harita[i][j] = 1;
+			}
+		}
+		
+		tuglagenisligi = 540/sutun;
+		tuglayuksekligi = 150/satir;
+	}
+	public void draw(Graphics2D g) {
+		for(int i = 0; i < harita.length; i++) {
+			for(int j = 0; j< harita[0].length; j++) {
+				if(harita[i][j] > 0) {
+					g.setColor(Color.black);
+					g.fillRect(j * tuglagenisligi + 80, i * tuglayuksekligi + 50, tuglagenisligi, tuglayuksekligi);
+					
+					g.setStroke(new BasicStroke(3));
+					g.setColor(Color.orange);
+					g.drawRect(j * tuglagenisligi + 80, i * tuglayuksekligi + 50, tuglagenisligi, tuglayuksekligi);
+				}
+			}
+		}	
+	}
+	public void tuglaDegeriniAyarla(int deger, int satir, int sutun) {
+		harita[satir][sutun] = deger;
+		
+	}
+
+} 
